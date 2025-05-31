@@ -8,4 +8,5 @@ proc-macro = true
 
 [dependencies]
 itertools = "0.14.0"
+quote = "1.0.40"
 syn = "2.0.101"

@@ -5,6 +5,7 @@
 
 use itertools::Itertools;
 use proc_macro::{Delimiter, Group, Literal, Punct, Spacing, TokenStream, TokenTree};
+use quote::quote_spanned;
 use std::f64::consts::PI;
 use std::iter::repeat_n;
 use std::ops::Neg;
@@ -78,14 +79,20 @@ impl Parse for SineWaveInput {
     }
 }
 
-fn get_number_of_unique_samples(frequency: f64, rate: f64) -> usize {
-    ((rate / frequency / 4.0 + 1.0) as u64).try_into().unwrap()
+fn get_number_of_unique_samples(
+    frequency: f64,
+    rate: f64,
+) -> std::result::Result<usize, (u64, u64)> {
+    if frequency > rate / 4.0 {
+        Err((frequency as u64, rate as u64))
+    } else {
+        Ok(((rate / frequency / 4.0 + 1.0) as u64).try_into().unwrap())
+    }
 }
 
 // TODO: Alternate parsing "mode" for const and static variables
 // TODO: Add [symmetric: true|false] to select between this and true sine wave
 // TODO: Add length to select how many samples to generate
-// TODO: Fail generation if frequency is too high for rate
 // TODO: Document rounding
 #[proc_macro]
 pub fn sine_wave(tokens: TokenStream) -> TokenStream {
@@ -93,36 +100,62 @@ pub fn sine_wave(tokens: TokenStream) -> TokenStream {
     let values = get_number_of_unique_samples(
         input
             .frequency
+            .clone()
             .map(|input| input.base10_parse().unwrap())
             .unwrap_or(440)
             .into(),
         input
             .rate
+            .clone()
             .map(|input| input.base10_parse().unwrap())
             .unwrap_or(44_100)
             .into(),
     );
-    let multiplier = PI * 2_f64 / ((values - 1) * 4) as f64;
-    let samples: Vec<_> = (0..values)
-        .chain((1..values - 1).rev())
-        .map(|i| (i as f64 * multiplier))
-        .map(f64::sin)
-        .map(|value| value * i16::MAX as f64)
-        .map(|value| value as i16)
-        .collect();
-    let samples: Vec<_> = samples
-        .iter()
-        .map(Clone::clone)
-        .chain(samples.iter().map(Neg::neg))
-        .collect();
-    let tokens = TokenStream::from_iter(
-        samples
+    if let Err((ref frequency, ref rate)) = values {
+        if let Some(freq) = input.frequency {
+            let quarter = rate / 4;
+            let error = format_args!(
+                "`frequency` should be less than {} for rate of {} Hz",
+                quarter, rate
+            )
+            .to_string();
+            quote_spanned!(freq.span() => compile_error!(#error)).into()
+        } else if let Some(rate) = input.rate {
+            let quadruple = frequency * 4;
+            let error = format_args!(
+                "`rate` should be more than {} for frequency of {} Hz",
+                quadruple, frequency
+            )
+            .to_string();
+            quote_spanned!(rate.span() => compile_error!(#error)).into()
+        } else {
+            unreachable!()
+        }
+    } else if let Ok(values) = values {
+        let multiplier = PI * 2_f64 / ((values - 1) * 4) as f64;
+        let samples: Vec<_> = (0..values)
+            .chain((1..values - 1).rev())
+            .map(|i| (i as f64 * multiplier))
+            .map(f64::sin)
+            .map(|value| value * i16::MAX as f64)
+            .map(|value| value as i16)
+            .collect();
+        let samples: Vec<_> = samples
             .iter()
-            .map(|value| TokenTree::Literal(Literal::i16_suffixed(*value)))
-            .interleave(repeat_n(
-                TokenTree::from(Punct::new(',', Spacing::Alone)),
-                samples.len() - 1,
-            )),
-    );
-    TokenStream::from(TokenTree::from(Group::new(Delimiter::Bracket, tokens)))
+            .map(Clone::clone)
+            .chain(samples.iter().map(Neg::neg))
+            .collect();
+        let tokens = TokenStream::from_iter(
+            samples
+                .iter()
+                .map(|value| TokenTree::Literal(Literal::i16_suffixed(*value)))
+                .interleave(repeat_n(
+                    TokenTree::from(Punct::new(',', Spacing::Alone)),
+                    samples.len() - 1,
+                )),
+        );
+        TokenStream::from(TokenTree::from(Group::new(Delimiter::Bracket, tokens)))
+    } else {
+        unreachable!()
+    }
 }
