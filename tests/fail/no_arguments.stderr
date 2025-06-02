@@ -1,0 +1,7 @@
+error: `frequency` must be defined
+ --> tests/fail/no_arguments.rs:9:17
+  |
+9 |     let _wave = sine_wave!();
+  |                 ^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `sine_wave` (in Nightly builds, run with -Z macro-backtrace for more info)

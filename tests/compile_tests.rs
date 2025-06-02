@@ -4,6 +4,12 @@
  */
 
 #[test]
+fn test_compile_no_arguments() {
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/fail/no_arguments.rs");
+}
+
+#[test]
 fn test_compile_bad_name() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/bad_name_const.rs");

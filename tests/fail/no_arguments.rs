@@ -6,5 +6,5 @@
 use sine_macro::sine_wave;
 
 fn main() {
-    let _wave = sine_wave!(frequency: 440, rate: 100);
+    let _wave = sine_wave!();
 }
