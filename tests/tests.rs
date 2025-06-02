@@ -67,3 +67,15 @@ fn test_100_10_static_mut() {
 fn test_100_10_const() {
     assert_eq!(CONST_WAVE, WAVE_100_10);
 }
+
+#[test]
+fn test_100_10_repeated() {
+    const WAVE_100_10: [i16; 20] = [
+        0, 19259, 31163, 31163, 19259, 0, -19259, -31163, -31163, -19259, 0, 19259, 31163, 31163,
+        19259, 0, -19259, -31163, -31163, -19259,
+    ];
+    let wave = sine_wave!(frequency: 10, rate: 100, repeats: 2);
+    assert_eq!(wave, WAVE_100_10);
+    let wave = sine_wave!(frequency: 10, rate: 100, len: 20);
+    assert_eq!(wave, WAVE_100_10);
+}

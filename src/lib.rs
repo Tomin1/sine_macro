@@ -35,6 +35,7 @@ struct SineWaveAttrs {
     frequency: Option<LitInt>,
     rate: Option<LitInt>,
     len: Option<LitInt>,
+    repeats: Option<LitInt>,
 }
 
 impl Parse for SineWaveAttrs {
@@ -43,6 +44,7 @@ impl Parse for SineWaveAttrs {
         let mut frequency = None;
         let mut rate = None;
         let mut len = None;
+        let mut repeats = None;
         for attr in attrs {
             if attr.name == "frequency" {
                 if frequency.is_none() {
@@ -70,7 +72,12 @@ impl Parse for SineWaveAttrs {
                     return Err(Error::new(attr.name.span(), "`rate` defined twice"));
                 }
             } else if attr.name == "len" {
-                if len.is_none() {
+                if repeats.is_some() {
+                    return Err(Error::new(
+                        attr.name.span(),
+                        "cannot define both `len` and `repeats`",
+                    ));
+                } else if len.is_none() {
                     let value: usize = attr.value.base10_parse()?;
                     if value > 0 {
                         len = Some(attr.value)
@@ -79,6 +86,22 @@ impl Parse for SineWaveAttrs {
                     }
                 } else {
                     return Err(Error::new(attr.name.span(), "`len` defined twice"));
+                }
+            } else if attr.name == "repeats" {
+                if len.is_some() {
+                    return Err(Error::new(
+                        attr.name.span(),
+                        "cannot define both `len` and `repeats`",
+                    ));
+                } else if repeats.is_none() {
+                    let value: usize = attr.value.base10_parse()?;
+                    if value > 0 {
+                        repeats = Some(attr.value)
+                    } else {
+                        return Err(Error::new(attr.value.span(), "`repeats` must be positive"));
+                    }
+                } else {
+                    return Err(Error::new(attr.name.span(), "`repeats` defined twice"));
                 }
             } else {
                 let idents = {
@@ -89,8 +112,9 @@ impl Parse for SineWaveAttrs {
                     if rate.is_none() {
                         idents.push("`rate`");
                     }
-                    if len.is_none() {
+                    if len.is_none() && repeats.is_none() {
                         idents.push("`len`");
+                        idents.push("`repeats`");
                     }
                     idents
                 };
@@ -106,6 +130,7 @@ impl Parse for SineWaveAttrs {
             frequency,
             rate,
             len,
+            repeats,
         })
     }
 }
@@ -289,7 +314,14 @@ pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 .len
                 .clone()
                 .map(|input| input.base10_parse().unwrap())
-                .unwrap_or_else(|| samples.len());
+                .unwrap_or_else(|| {
+                    samples.len()
+                        * attrs
+                            .repeats
+                            .clone()
+                            .map(|input| input.base10_parse().unwrap())
+                            .unwrap_or(1)
+                });
             let tokens = TokenStream::from_iter(
                 samples
                     .iter()
