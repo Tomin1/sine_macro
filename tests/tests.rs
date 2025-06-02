@@ -5,6 +5,20 @@
 
 use sine_macro::sine_wave;
 
+const WAVE_100_10: [i16; 8] = [0, 23169, 32767, 23169, 0, -23169, -32767, -23169];
+
+sine_wave! {
+    static STATIC_WAVE = sine_wave(frequency: 10, rate: 100);
+}
+
+sine_wave! {
+    static mut STATIC_MUT_WAVE = sine_wave(frequency: 10, rate: 100);
+}
+
+sine_wave! {
+    const CONST_WAVE = sine_wave(frequency: 10, rate: 100);
+}
+
 #[test]
 fn test_44100_441() {
     const WAVE_44100_441: [i16; 100] = [
@@ -22,4 +36,24 @@ fn test_44100_441() {
     assert_eq!(wave, WAVE_44100_441);
     let wave = sine_wave!(rate: 44100, frequency: 441);
     assert_eq!(wave, WAVE_44100_441);
+}
+
+#[test]
+fn test_no_arguments() {
+    let _wave = sine_wave!();
+}
+
+#[test]
+fn test_100_10_static() {
+    assert_eq!(STATIC_WAVE, WAVE_100_10);
+}
+
+#[test]
+fn test_100_10_static_mut() {
+    assert_eq!(unsafe { STATIC_MUT_WAVE }, WAVE_100_10);
+}
+
+#[test]
+fn test_100_10_const() {
+    assert_eq!(CONST_WAVE, WAVE_100_10);
 }
