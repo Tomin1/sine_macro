@@ -1,0 +1,5 @@
+error: expected `frequency` or `rate`
+ --> tests/fail/invalid_name2.rs:9:28
+  |
+9 |     let _wave = sine_wave!(invalid: 10, rate: 10000);
+  |                            ^^^^^^^

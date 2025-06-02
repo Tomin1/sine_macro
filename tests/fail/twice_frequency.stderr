@@ -1,0 +1,5 @@
+error: `frequency` defined twice
+ --> tests/fail/twice_frequency.rs:9:45
+  |
+9 |     let _wave = sine_wave!(frequency: 8000, frequency: 5000);
+  |                                             ^^^^^^^^^

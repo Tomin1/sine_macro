@@ -1,0 +1,5 @@
+error: `frequency` should be less than 750 for rate of 3000 Hz
+ --> tests/fail/invalid_values2.rs:9:51
+  |
+9 |     let _wave = sine_wave!(rate: 3000, frequency: 4000);
+  |                                                   ^^^^

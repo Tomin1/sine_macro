@@ -1,0 +1,5 @@
+error: the identifier must be `sine_wave`
+ --> tests/fail/bad_name_const.rs:9:24
+  |
+9 |     const CONST_WAVE = bad_name();
+  |                        ^^^^^^^^

@@ -1,0 +1,5 @@
+error: `rate` should be more than 1760 for frequency of 440 Hz
+ --> tests/fail/invalid_rate.rs:9:34
+  |
+9 |     let _wave = sine_wave!(rate: 1000);
+  |                                  ^^^^

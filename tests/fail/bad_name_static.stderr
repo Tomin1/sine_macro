@@ -1,0 +1,5 @@
+error: the identifier must be `sine_wave`
+ --> tests/fail/bad_name_static.rs:9:26
+  |
+9 |     static STATIC_WAVE = something_else();
+  |                          ^^^^^^^^^^^^^^
