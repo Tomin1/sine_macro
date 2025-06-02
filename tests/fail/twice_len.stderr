@@ -1,0 +1,5 @@
+error: `len` defined twice
+ --> tests/fail/twice_len.rs:9:38
+  |
+9 |     let _wave = sine_wave!(len: 100, len: 100);
+  |                                      ^^^

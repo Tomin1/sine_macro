@@ -41,6 +41,14 @@ fn test_44100_441() {
 }
 
 #[test]
+fn test_44100_441_partial() {
+    const WAVE_44100_441: [i16; 10] =
+        [0, 2057, 4106, 6139, 8148, 10125, 12062, 13951, 15785, 17557];
+    let wave = sine_wave!(frequency: 441, rate: 44100, len: 10);
+    assert_eq!(wave, WAVE_44100_441);
+}
+
+#[test]
 fn test_no_arguments() {
     let _wave = sine_wave!();
 }

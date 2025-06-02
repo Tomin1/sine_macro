@@ -34,6 +34,7 @@ impl Parse for AttrInput {
 struct SineWaveAttrs {
     frequency: Option<LitInt>,
     rate: Option<LitInt>,
+    len: Option<LitInt>,
 }
 
 impl Parse for SineWaveAttrs {
@@ -41,6 +42,7 @@ impl Parse for SineWaveAttrs {
         let attrs = Punctuated::<AttrInput, Token![,]>::parse_terminated(input)?;
         let mut frequency = None;
         let mut rate = None;
+        let mut len = None;
         for attr in attrs {
             if attr.name == "frequency" {
                 if frequency.is_none() {
@@ -67,17 +69,44 @@ impl Parse for SineWaveAttrs {
                 } else {
                     return Err(Error::new(attr.name.span(), "`rate` defined twice"));
                 }
+            } else if attr.name == "len" {
+                if len.is_none() {
+                    let value: usize = attr.value.base10_parse()?;
+                    if value > 0 {
+                        len = Some(attr.value)
+                    } else {
+                        return Err(Error::new(attr.value.span(), "`len` must be positive"));
+                    }
+                } else {
+                    return Err(Error::new(attr.name.span(), "`len` defined twice"));
+                }
             } else {
-                let text = match (frequency, rate) {
-                    (None, None) => "expected `frequency` or `rate`",
-                    (Some(_), None) => "expected `rate`",
-                    (None, Some(_)) => "expected `frequency`",
-                    (Some(_), Some(_)) => "unexpected identifier",
+                let idents = {
+                    let mut idents = Vec::new();
+                    if frequency.is_none() {
+                        idents.push("`frequency`");
+                    }
+                    if rate.is_none() {
+                        idents.push("`rate`");
+                    }
+                    if len.is_none() {
+                        idents.push("`len`");
+                    }
+                    idents
+                };
+                let text = if idents.is_empty() {
+                    "unexpected identifier".to_string()
+                } else {
+                    format_args!("expected any of {}", idents.join(", ")).to_string()
                 };
                 return Err(Error::new(attr.name.span(), text));
             }
         }
-        Ok(SineWaveAttrs { frequency, rate })
+        Ok(SineWaveAttrs {
+            frequency,
+            rate,
+            len,
+        })
     }
 }
 
@@ -192,7 +221,6 @@ impl SineWaveInput {
     }
 }
 
-// TODO: Add length to select how many samples to generate
 // TODO: Document rounding
 #[proc_macro]
 pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -226,7 +254,7 @@ pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 .to_string();
                 return quote_spanned!(rate.span() => compile_error!(#error)).into();
             }
-            _ => unreachable!()
+            _ => unreachable!(),
         },
         Ok(values) => {
             let multiplier = PI * 2_f64 / values as f64;
@@ -254,17 +282,23 @@ pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         .to_string();
                         quote_spanned!(rate.span() => compile_error!(#error)).into()
                     }
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 };
             }
-            count = samples.len();
+            count = attrs
+                .len
+                .clone()
+                .map(|input| input.base10_parse().unwrap())
+                .unwrap_or_else(|| samples.len());
             let tokens = TokenStream::from_iter(
                 samples
                     .iter()
+                    .cycle()
+                    .take(count)
                     .map(|value| TokenTree::Literal(Literal::i16_suffixed(*value)))
                     .interleave(repeat_n(
                         TokenTree::from(Punct::new(',', Spacing::Alone)),
-                        samples.len() - 1,
+                        count - 1,
                     )),
             );
             TokenStream::from(TokenTree::from(Group::new(Delimiter::Bracket, tokens)))

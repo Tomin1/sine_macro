@@ -73,3 +73,9 @@ fn test_compile_twice_rate() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/twice_rate.rs");
 }
+
+#[test]
+fn test_compile_twice_len() {
+    let t = trybuild::TestCases::new();
+    t.compile_fail("tests/fail/twice_len.rs");
+}
