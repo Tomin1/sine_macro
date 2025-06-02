@@ -3,6 +3,28 @@
  * SPDX-License-Identifier: MIT
  */
 
+//! A procedural macro for generating sine waves.
+//!
+//! # Example
+//! ```rust
+//! use sine_macro::sine_wave;
+//!
+//! // Sine wave defined as const:
+//! sine_wave! {
+//!     const MY_CONST_SINE_WAVE = sine_wave(frequency: 400, rate: 48_000);
+//! }
+//!
+//! // Or as static variable:
+//! sine_wave! {
+//!     static MY_STATIC_SINE_WAVE = sine_wave(frequency: 1000, rate: 48_000, len: 48_000);
+//! }
+//!
+//! // Sine wave defined as local variable with default rate of 44,100 Hz:
+//! let wave = sine_wave!(frequency: 800, repeats: 10);
+//! ```
+
+#![deny(missing_docs)]
+
 use itertools::Itertools;
 use proc_macro2::{Delimiter, Group, Literal, Punct, Spacing, TokenStream, TokenTree};
 use quote::{quote, quote_spanned};
@@ -136,15 +158,15 @@ impl Parse for SineWaveAttrs {
 }
 
 struct Static {
-    pub vis: Visibility,
-    pub _static_token: Token![static],
-    pub mutability: StaticMutability,
-    pub ident: Ident,
-    pub _eq_token: Token![=],
-    pub name: Ident,
-    pub _paren: Paren,
-    pub attrs: SineWaveAttrs,
-    pub _semi_token: Token![;],
+    vis: Visibility,
+    _static_token: Token![static],
+    mutability: StaticMutability,
+    ident: Ident,
+    _eq_token: Token![=],
+    name: Ident,
+    _paren: Paren,
+    attrs: SineWaveAttrs,
+    _semi_token: Token![;],
 }
 
 impl Parse for Static {
@@ -174,14 +196,14 @@ impl Parse for Static {
 }
 
 struct Const {
-    pub vis: Visibility,
-    pub _const_token: Token![const],
-    pub ident: Ident,
-    pub _eq_token: Token![=],
-    pub name: Ident,
-    pub _paren: Paren,
-    pub attrs: SineWaveAttrs,
-    pub _semi_token: Token![;],
+    vis: Visibility,
+    _const_token: Token![const],
+    ident: Ident,
+    _eq_token: Token![=],
+    name: Ident,
+    _paren: Paren,
+    attrs: SineWaveAttrs,
+    _semi_token: Token![;],
 }
 
 impl Parse for Const {
@@ -246,7 +268,35 @@ impl SineWaveInput {
     }
 }
 
-// TODO: Document rounding
+/// Generates an array of [`i16`] for a sine wave.
+///
+/// Sample rate and frequency of the wave can be controlled with `rate` and `frequency`
+/// respectively. Rounding may apply which can affect the frequency of the final wave slightly.
+///
+/// The array is by default one period long so it can be repeated as many times as needed.
+/// If a specific number of samples or number of repeated periods are required use `len` and
+/// `repeats` respectively. Both cannot be used simultaneously.
+///
+/// If `rate` is not selected, it defaults to 44,100 Hz, and `frequency` defaults to 440 Hz.
+///
+/// # Examples
+/// This defines custom sine wave with sampling rate of 48,000 Hz at frequency of 1000 Hz with only
+/// one repeat (the default).
+///
+/// ```rust
+/// # use sine_macro::sine_wave;
+/// let wave = sine_wave!(rate: 48_000, frequency: 1000, repeats: 1);
+/// ```
+///
+/// You can also use this to define `static` or `const` variables. This defines one second long
+/// sine wave with sampling rate of 8,000 Hz and frequency of 400 Hz.
+///
+/// ```rust
+/// # use sine_macro::sine_wave;
+/// sine_wave! {
+///     static ONE_SECOND = sine_wave(frequency: 400, rate: 8_000, len: 8_000);
+/// }
+/// ```
 #[proc_macro]
 pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(tokens as SineWaveInput);
