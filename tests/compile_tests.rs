@@ -32,6 +32,7 @@ fn test_compile_negative_values() {
     t.compile_fail("tests/fail/negative_rate.rs");
     t.compile_fail("tests/fail/negative_len.rs");
     t.compile_fail("tests/fail/negative_repeats.rs");
+    t.compile_fail("tests/fail/negative_skip.rs");
 }
 
 #[test]
@@ -60,6 +61,7 @@ fn test_compile_defined_twice() {
     t.compile_fail("tests/fail/twice_rate.rs");
     t.compile_fail("tests/fail/twice_len.rs");
     t.compile_fail("tests/fail/twice_repeats.rs");
+    t.compile_fail("tests/fail/twice_skip.rs");
 }
 
 #[test]

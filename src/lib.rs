@@ -60,6 +60,7 @@ struct SineWaveAttrs {
     rate: Option<LitInt>,
     len: Option<LitInt>,
     repeats: Option<LitInt>,
+    skip: Option<LitInt>,
 }
 
 impl Parse for SineWaveAttrs {
@@ -69,6 +70,7 @@ impl Parse for SineWaveAttrs {
         let mut rate: Option<LitInt> = None;
         let mut len = None;
         let mut repeats = None;
+        let mut skip = None;
         for attr in attrs {
             if attr.name == "frequency" {
                 if frequency.is_none() {
@@ -151,6 +153,13 @@ impl Parse for SineWaveAttrs {
                 } else {
                     return Err(Error::new_spanned(attr.name, "`repeats` defined twice"));
                 }
+            } else if attr.name == "skip" {
+                if skip.is_none() {
+                    let _value: u32 = attr.value.base10_parse()?;
+                    skip = Some(attr.value);
+                } else {
+                    return Err(Error::new_spanned(attr.name, "`skip` defined twice"));
+                }
             } else {
                 let idents = {
                     let mut idents = Vec::new();
@@ -163,6 +172,9 @@ impl Parse for SineWaveAttrs {
                     if len.is_none() && repeats.is_none() {
                         idents.push("`len`");
                         idents.push("`repeats`");
+                    }
+                    if skip.is_none() {
+                        idents.push("`skip`");
                     }
                     idents
                 };
@@ -192,6 +204,7 @@ impl Parse for SineWaveAttrs {
                 rate,
                 len,
                 repeats,
+                skip,
             })
         } else {
             Err(Error::new(input.span(), "`frequency` must be defined"))
@@ -313,7 +326,9 @@ impl SineWaveInput {
 ///
 /// The array is by default one period long so it can be repeated as many times as needed.
 /// If a specific number of samples or number of repeated periods are required use `len` and
-/// `repeats` respectively. Both cannot be used simultaneously.
+/// `repeats` respectively. Both cannot be used simultaneously. It is also possible to start the
+/// array on a later point with `skip`. That effectively introduces a phase shift and defaults to
+/// zero skipped samples.
 ///
 /// If `rate` is not selected, it defaults to 44,100 Hz. `frequency` must be defined always.
 ///
@@ -380,10 +395,16 @@ pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
                         .map(|input| input.base10_parse().unwrap())
                         .unwrap_or(1)
             });
+        let skip = attrs
+            .skip
+            .clone()
+            .map(|input| input.base10_parse().unwrap())
+            .unwrap_or(0);
         let tokens = TokenStream::from_iter(
             samples
                 .iter()
                 .cycle()
+                .skip(skip)
                 .take(count)
                 .map(|value| TokenTree::Literal(Literal::i16_suffixed(*value)))
                 .interleave(repeat_n(

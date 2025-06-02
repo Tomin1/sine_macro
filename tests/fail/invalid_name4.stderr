@@ -1,5 +1,5 @@
 error: unexpected identifier
- --> tests/fail/invalid_name4.rs:9:67
+ --> tests/fail/invalid_name4.rs:9:76
   |
-9 |     let _wave = sine_wave!(rate: 1000, frequency: 100, len: 1000, invalid: 10);
-  |                                                                   ^^^^^^^
+9 |     let _wave = sine_wave!(rate: 1000, frequency: 100, len: 1000, skip: 0, invalid: 10);
+  |                                                                            ^^^^^^^

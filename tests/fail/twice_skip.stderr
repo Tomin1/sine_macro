@@ -1,0 +1,5 @@
+error: `skip` defined twice
+ --> tests/fail/twice_skip.rs:9:42
+  |
+9 |     let _wave = sine_wave!(skip: 24_000, skip: 24_000);
+  |                                          ^^^^

@@ -76,3 +76,14 @@ fn test_100_10_repeated() {
     let wave = sine_wave!(frequency: 10, rate: 100, len: 20);
     assert_eq!(wave, WAVE_100_10);
 }
+
+#[test]
+fn test_100_10_shifted() {
+    const WAVE_100_10: [i16; 10] = [
+        0, -19259, -31163, -31163, -19259, 0, 19259, 31163, 31163, 19259,
+    ];
+    let wave = sine_wave!(frequency: 10, rate: 100, skip: 5);
+    assert_eq!(wave, WAVE_100_10);
+    let wave = sine_wave!(frequency: 10, rate: 100, skip: 15);
+    assert_eq!(wave, WAVE_100_10);
+}

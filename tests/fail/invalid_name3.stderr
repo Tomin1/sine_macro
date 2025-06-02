@@ -1,5 +1,5 @@
 error: expected any of `frequency`
- --> tests/fail/invalid_name3.rs:9:50
+ --> tests/fail/invalid_name3.rs:9:60
   |
-9 |     let _wave = sine_wave!(rate: 2000, len: 100, invalid: 123);
-  |                                                  ^^^^^^^
+9 |     let _wave = sine_wave!(rate: 2000, len: 100, skip: 50, invalid: 123);
+  |                                                            ^^^^^^^
