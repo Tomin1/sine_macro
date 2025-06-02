@@ -11,39 +11,21 @@ fn test_compile_bad_name() {
 }
 
 #[test]
-fn test_compile_zero_frequency() {
+fn test_compile_zero_values() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/zero_frequency.rs");
-}
-
-#[test]
-fn test_compile_zero_rate() {
-    let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/zero_rate.rs");
+    t.compile_fail("tests/fail/zero_len.rs");
+    t.compile_fail("tests/fail/zero_repeats.rs");
 }
 
 #[test]
-fn test_compile_negative_frequency() {
+fn test_compile_negative_values() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/negative_frequency.rs");
-}
-
-#[test]
-fn test_compile_negative_rate() {
-    let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/negative_rate.rs");
-}
-
-#[test]
-fn test_compile_invalid_frequency() {
-    let t = trybuild::TestCases::new();
-    t.compile_fail("tests/fail/invalid_frequency.rs");
-}
-
-#[test]
-fn test_compile_invalid_rate() {
-    let t = trybuild::TestCases::new();
-    t.compile_fail("tests/fail/invalid_rate.rs");
+    t.compile_fail("tests/fail/negative_len.rs");
+    t.compile_fail("tests/fail/negative_repeats.rs");
 }
 
 #[test]
@@ -58,24 +40,25 @@ fn test_compile_invalid_name() {
 #[test]
 fn test_compile_invalid_values() {
     let t = trybuild::TestCases::new();
+    t.compile_fail("tests/fail/invalid_frequency.rs");
+    t.compile_fail("tests/fail/invalid_rate.rs");
     t.compile_fail("tests/fail/invalid_values.rs");
     t.compile_fail("tests/fail/invalid_values2.rs");
+    t.compile_fail("tests/fail/invalid_values3.rs");
 }
 
 #[test]
-fn test_compile_twice_frequency() {
+fn test_compile_defined_twice() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/twice_frequency.rs");
-}
-
-#[test]
-fn test_compile_twice_rate() {
-    let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/twice_rate.rs");
+    t.compile_fail("tests/fail/twice_len.rs");
+    t.compile_fail("tests/fail/twice_repeats.rs");
 }
 
 #[test]
-fn test_compile_twice_len() {
+fn test_compile_both_repeats_and_len() {
     let t = trybuild::TestCases::new();
-    t.compile_fail("tests/fail/twice_len.rs");
+    t.compile_fail("tests/fail/len_and_repeats.rs");
+    t.compile_fail("tests/fail/repeats_and_len.rs");
 }

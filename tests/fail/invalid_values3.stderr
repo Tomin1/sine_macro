@@ -1,0 +1,5 @@
+error: could not generate sine wave for `rate` of 800 Hz and frequency of 440 Hz
+ --> tests/fail/invalid_values3.rs:9:34
+  |
+9 |     let _wave = sine_wave!(rate: 800);
+  |                                  ^^^

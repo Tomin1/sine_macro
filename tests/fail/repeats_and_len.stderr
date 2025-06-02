@@ -1,0 +1,5 @@
+error: cannot define both `len` and `repeats`
+ --> tests/fail/repeats_and_len.rs:9:38
+  |
+9 |     let _wave = sine_wave!(len: 100, repeats: 10);
+  |                                      ^^^^^^^

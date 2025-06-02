@@ -1,0 +1,5 @@
+error: invalid digit found in string
+ --> tests/fail/negative_len.rs:9:33
+  |
+9 |     let _wave = sine_wave!(len: -100);
+  |                                 ^
