@@ -5,7 +5,9 @@
 
 use sine_macro::sine_wave;
 
-const WAVE_100_10: [i16; 8] = [0, 23169, 32767, 23169, 0, -23169, -32767, -23169];
+const WAVE_100_10: [i16; 10] = [
+    0, 19259, 31163, 31163, 19259, 0, -19259, -31163, -31163, -19259,
+];
 
 sine_wave! {
     static STATIC_WAVE = sine_wave(frequency: 10, rate: 100);

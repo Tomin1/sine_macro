@@ -8,7 +8,6 @@ use proc_macro2::{Delimiter, Group, Literal, Punct, Spacing, TokenStream, TokenT
 use quote::{quote, quote_spanned};
 use std::f64::consts::PI;
 use std::iter::repeat_n;
-use std::ops::Neg;
 use syn::parse::{Error, Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::Paren;
@@ -175,14 +174,11 @@ impl Parse for SineWaveInput {
     }
 }
 
-fn get_number_of_unique_samples(
-    frequency: f64,
-    rate: f64,
-) -> std::result::Result<usize, (u64, u64)> {
-    if frequency > rate / 4.0 {
+fn get_number_of_samples(frequency: f64, rate: f64) -> std::result::Result<usize, (u64, u64)> {
+    if frequency > rate {
         Err((frequency as u64, rate as u64))
     } else {
-        Ok(((rate / frequency / 4.0 + 1.0) as u64).try_into().unwrap())
+        Ok(((rate / frequency) as u64).try_into().unwrap())
     }
 }
 
@@ -196,64 +192,71 @@ impl SineWaveInput {
     }
 }
 
-// TODO: Add [symmetric: true|false] to select between this and true sine wave
 // TODO: Add length to select how many samples to generate
 // TODO: Document rounding
 #[proc_macro]
 pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(tokens as SineWaveInput);
     let attrs = input.get_attrs();
-    let values = get_number_of_unique_samples(
-        attrs
-            .frequency
-            .clone()
-            .map(|input| input.base10_parse().unwrap())
-            .unwrap_or(440)
-            .into(),
-        attrs
-            .rate
-            .clone()
-            .map(|input| input.base10_parse().unwrap())
-            .unwrap_or(44_100)
-            .into(),
-    );
+    let frequency: u32 = attrs
+        .frequency
+        .clone()
+        .map(|input| input.base10_parse().unwrap())
+        .unwrap_or(440);
+    let rate: u32 = attrs
+        .rate
+        .clone()
+        .map(|input| input.base10_parse().unwrap())
+        .unwrap_or(44_100);
+    let values = get_number_of_samples(frequency as f64, rate as f64);
     let count;
     let sine_wave_tokens = match values {
         Err((ref frequency, ref rate)) => match (attrs.frequency.clone(), attrs.rate.clone()) {
             (Some(freq), _) => {
-                let quarter = rate / 4;
-                let error = format_args!(
-                    "`frequency` should be less than {} for rate of {} Hz",
-                    quarter, rate
-                )
-                .to_string();
+                let error =
+                    format_args!("`frequency` should be less than rate, which is {} Hz", rate)
+                        .to_string();
                 return quote_spanned!(freq.span() => compile_error!(#error)).into();
             }
             (None, Some(rate)) => {
-                let quadruple = frequency * 4;
                 let error = format_args!(
-                    "`rate` should be more than {} for frequency of {} Hz",
-                    quadruple, frequency
+                    "`rate` should be more than frequency, which is {} Hz",
+                    frequency
                 )
                 .to_string();
                 return quote_spanned!(rate.span() => compile_error!(#error)).into();
             }
-            _ => unreachable!(),
+            _ => unreachable!()
         },
         Ok(values) => {
-            let multiplier = PI * 2_f64 / ((values - 1) * 4) as f64;
+            let multiplier = PI * 2_f64 / values as f64;
             let samples: Vec<_> = (0..values)
-                .chain((1..values - 1).rev())
                 .map(|i| (i as f64 * multiplier))
                 .map(f64::sin)
                 .map(|value| value * i16::MAX as f64)
                 .map(|value| value as i16)
                 .collect();
-            let samples: Vec<_> = samples
-                .iter()
-                .map(Clone::clone)
-                .chain(samples.iter().map(Neg::neg))
-                .collect();
+            if !samples.iter().any(|x| *x != 0) {
+                return match (attrs.frequency.clone(), attrs.rate.clone()) {
+                    (Some(freq), _) => {
+                        let error = format_args!(
+                            "could not generate sine wave for `rate` of {} Hz and frequency of {} Hz",
+                            rate, frequency
+                        )
+                        .to_string();
+                        quote_spanned!(freq.span() => compile_error!(#error)).into()
+                    }
+                    (None, Some(rate)) => {
+                        let error = format_args!(
+                            "could not generate sine wave for `rate` of {} Hz and frequency of {} Hz",
+                            rate, frequency
+                        )
+                        .to_string();
+                        quote_spanned!(rate.span() => compile_error!(#error)).into()
+                    }
+                    _ => unreachable!()
+                };
+            }
             count = samples.len();
             let tokens = TokenStream::from_iter(
                 samples

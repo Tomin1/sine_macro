@@ -1,5 +1,5 @@
-error: `frequency` should be less than 11025 for rate of 44100 Hz
+error: `frequency` should be less than rate, which is 44100 Hz
  --> tests/fail/invalid_frequency.rs:9:39
   |
-9 |     let _wave = sine_wave!(frequency: 20000);
+9 |     let _wave = sine_wave!(frequency: 50000);
   |                                       ^^^^^
