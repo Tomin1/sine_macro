@@ -1,7 +1,13 @@
 [package]
 name = "sine_macro"
+description = "Procedural macro for generating sine wave arrays"
+repository = "https://github.com/Tomin1/sine_macro"
+license = "MIT"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.85.1"
+categories = ["embedded", "multimedia::audio"]
+keywords = ["wave", "audio", "proc-macro"]
 
 [lib]
 proc-macro = true
