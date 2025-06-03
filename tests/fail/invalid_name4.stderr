@@ -1,4 +1,4 @@
-error: unexpected identifier
+error: invalid identifier, must be one of `frequency`, `rate`, `len`, `repeats`, `skip` and `type`
  --> tests/fail/invalid_name4.rs:9:76
   |
 9 |     let _wave = sine_wave!(rate: 1000, frequency: 100, len: 1000, skip: 0, invalid: 10);

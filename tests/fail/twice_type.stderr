@@ -1,0 +1,5 @@
+error: `type` defined twice
+ --> tests/fail/twice_type.rs:9:39
+  |
+9 |     let _wave = sine_wave!(type: i16, type: i32);
+  |                                       ^^^^

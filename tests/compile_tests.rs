@@ -49,6 +49,7 @@ fn test_compile_invalid_values() {
     let t = trybuild::TestCases::new();
     t.compile_fail("tests/fail/invalid_frequency.rs");
     t.compile_fail("tests/fail/invalid_rate.rs");
+    t.compile_fail("tests/fail/invalid_type.rs");
     t.compile_fail("tests/fail/invalid_values.rs");
     t.compile_fail("tests/fail/invalid_values2.rs");
     t.compile_fail("tests/fail/invalid_values3.rs");
@@ -62,6 +63,7 @@ fn test_compile_defined_twice() {
     t.compile_fail("tests/fail/twice_len.rs");
     t.compile_fail("tests/fail/twice_repeats.rs");
     t.compile_fail("tests/fail/twice_skip.rs");
+    t.compile_fail("tests/fail/twice_type.rs");
 }
 
 #[test]

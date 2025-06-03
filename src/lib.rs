@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-//! A procedural macro for generating sine waves.
+//! A procedural macro for generating signed integer sine waves.
 //!
 //! # Example
 //! ```rust
@@ -26,7 +26,7 @@
 #![deny(missing_docs)]
 
 use itertools::Itertools;
-use proc_macro2::{Delimiter, Group, Literal, Punct, Spacing, TokenStream, TokenTree};
+use proc_macro2::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
 use quote::quote;
 use std::f64::consts::PI;
 use std::iter::repeat_n;
@@ -36,31 +36,20 @@ use syn::token::Paren;
 use syn::{Ident, LitInt, Result, StaticMutability, Visibility, parse_macro_input};
 use syn::{Token, parenthesized};
 
+mod types;
+use crate::types::helpers::{Ident as GetIdent, Literal as GetLiteral, Max as GetMax};
+use crate::types::*;
+
 const DEFAULT_RATE: u32 = 44_100;
+const DEFAULT_TYPE: &str = "i16";
 
-struct AttrInput {
-    name: Ident,
-    _sep: Token![:],
-    value: LitInt,
-}
-
-impl Parse for AttrInput {
-    fn parse(input: ParseStream) -> Result<Self> {
-        Ok(AttrInput {
-            name: input.parse()?,
-            _sep: input.parse()?,
-            value: input.parse()?,
-        })
-    }
-}
-
-#[derive(Clone)]
 struct SineWaveAttrs {
     frequency: LitInt,
     rate: Option<LitInt>,
     len: Option<LitInt>,
     repeats: Option<LitInt>,
     skip: Option<LitInt>,
+    ty: Option<Type>,
 }
 
 impl Parse for SineWaveAttrs {
@@ -71,128 +60,142 @@ impl Parse for SineWaveAttrs {
         let mut len = None;
         let mut repeats = None;
         let mut skip = None;
+        let mut ty = None;
         for attr in attrs {
-            if attr.name == "frequency" {
-                if frequency.is_none() {
-                    let value: u32 = attr.value.base10_parse()?;
-                    if value > 0 {
-                        if let Some(rate) = &rate {
-                            let rate: u32 = rate.base10_parse().unwrap();
-                            if rate < value {
-                                return Err(Error::new_spanned(
-                                    attr.value,
-                                    format_args!(
-                                        "`frequency` should be less than `rate`, which is {} Hz",
-                                        rate
-                                    ),
-                                ));
-                            }
-                        }
-                        frequency = Some(attr.value)
-                    } else {
-                        return Err(Error::new_spanned(
-                            attr.value,
-                            "`frequency` must be positive",
-                        ));
-                    }
-                } else {
-                    return Err(Error::new_spanned(attr.name, "`frequency` defined twice"));
-                }
-            } else if attr.name == "rate" {
-                if rate.is_none() {
-                    let value: u32 = attr.value.base10_parse()?;
-                    if value > 0 {
-                        if let Some(frequency) = &frequency {
-                            let frequency: u32 = frequency.base10_parse().unwrap();
-                            if frequency > value {
-                                return Err(Error::new_spanned(
-                                    attr.value,
-                                    format_args!(
-                                        "`rate` should be more than `frequency`, which is {} Hz",
-                                        frequency
-                                    ),
-                                ));
-                            }
-                        }
-                        rate = Some(attr.value)
-                    } else {
-                        return Err(Error::new_spanned(attr.value, "`rate` must be positive"));
-                    }
-                } else {
-                    return Err(Error::new_spanned(attr.name, "`rate` defined twice"));
-                }
-            } else if attr.name == "len" {
-                if repeats.is_some() {
-                    return Err(Error::new_spanned(
-                        attr.name,
-                        "cannot define both `len` and `repeats`",
-                    ));
-                } else if len.is_none() {
-                    let value: usize = attr.value.base10_parse()?;
-                    if value > 0 {
-                        len = Some(attr.value)
-                    } else {
-                        return Err(Error::new_spanned(attr.value, "`len` must be positive"));
-                    }
-                } else {
-                    return Err(Error::new_spanned(attr.name, "`len` defined twice"));
-                }
-            } else if attr.name == "repeats" {
-                if len.is_some() {
-                    return Err(Error::new(
-                        attr.name.span(),
-                        "cannot define both `len` and `repeats`",
-                    ));
-                } else if repeats.is_none() {
-                    let value: usize = attr.value.base10_parse()?;
-                    if value > 0 {
-                        repeats = Some(attr.value)
-                    } else {
-                        return Err(Error::new_spanned(attr.value, "`repeats` must be positive"));
-                    }
-                } else {
-                    return Err(Error::new_spanned(attr.name, "`repeats` defined twice"));
-                }
-            } else if attr.name == "skip" {
-                if skip.is_none() {
-                    let _value: u32 = attr.value.base10_parse()?;
-                    skip = Some(attr.value);
-                } else {
-                    return Err(Error::new_spanned(attr.name, "`skip` defined twice"));
-                }
-            } else {
-                let idents = {
-                    let mut idents = Vec::new();
+            match attr {
+                AttrInput::Int(IntAttrInput {
+                    name,
+                    value: Int::Frequency(attr_value),
+                    ..
+                }) => {
                     if frequency.is_none() {
-                        idents.push("`frequency`");
-                    }
-                    if rate.is_none() {
-                        idents.push("`rate`");
-                    }
-                    if len.is_none() && repeats.is_none() {
-                        idents.push("`len`");
-                        idents.push("`repeats`");
-                    }
-                    if skip.is_none() {
-                        idents.push("`skip`");
-                    }
-                    idents
-                };
-                return Err(Error::new_spanned(
-                    attr.name,
-                    if idents.is_empty() {
-                        "unexpected identifier".to_string()
+                        let value: u32 = attr_value.base10_parse()?;
+                        if value > 0 {
+                            if let Some(rate) = &rate {
+                                let rate: u32 = rate.base10_parse().unwrap();
+                                if rate < value {
+                                    return Err(Error::new_spanned(
+                                        attr_value,
+                                        format_args!(
+                                            "`frequency` should be less than `rate`, which is {} Hz",
+                                            rate
+                                        ),
+                                    ));
+                                }
+                            }
+                            frequency = Some(attr_value)
+                        } else {
+                            return Err(Error::new_spanned(
+                                attr_value,
+                                "`frequency` must be positive",
+                            ));
+                        }
                     } else {
-                        format_args!("expected any of {}", idents.join(", ")).to_string()
-                    },
-                ));
-            }
+                        return Err(Error::new_spanned(name, "`frequency` defined twice"));
+                    }
+                }
+                AttrInput::Int(IntAttrInput {
+                    name,
+                    value: Int::Rate(attr_value),
+                    ..
+                }) => {
+                    if rate.is_none() {
+                        let value: u32 = attr_value.base10_parse()?;
+                        if value > 0 {
+                            if let Some(frequency) = &frequency {
+                                let frequency: u32 = frequency.base10_parse().unwrap();
+                                if frequency > value {
+                                    return Err(Error::new_spanned(
+                                        attr_value,
+                                        format_args!(
+                                            "`rate` should be more than `frequency`, which is {} Hz",
+                                            frequency
+                                        ),
+                                    ));
+                                }
+                            }
+                            rate = Some(attr_value)
+                        } else {
+                            return Err(Error::new_spanned(attr_value, "`rate` must be positive"));
+                        }
+                    } else {
+                        return Err(Error::new_spanned(name, "`rate` defined twice"));
+                    }
+                }
+                AttrInput::Int(IntAttrInput {
+                    name,
+                    value: Int::Len(attr_value),
+                    ..
+                }) => {
+                    if repeats.is_some() {
+                        return Err(Error::new_spanned(
+                            name,
+                            "cannot define both `len` and `repeats`",
+                        ));
+                    } else if len.is_none() {
+                        let value: usize = attr_value.base10_parse()?;
+                        if value > 0 {
+                            len = Some(attr_value)
+                        } else {
+                            return Err(Error::new_spanned(attr_value, "`len` must be positive"));
+                        }
+                    } else {
+                        return Err(Error::new_spanned(name, "`len` defined twice"));
+                    }
+                }
+                AttrInput::Int(IntAttrInput {
+                    name,
+                    value: Int::Repeats(attr_value),
+                    ..
+                }) => {
+                    if len.is_some() {
+                        return Err(Error::new(
+                            name.span(),
+                            "cannot define both `len` and `repeats`",
+                        ));
+                    } else if repeats.is_none() {
+                        let value: usize = attr_value.base10_parse()?;
+                        if value > 0 {
+                            repeats = Some(attr_value)
+                        } else {
+                            return Err(Error::new_spanned(
+                                attr_value,
+                                "`repeats` must be positive",
+                            ));
+                        }
+                    } else {
+                        return Err(Error::new_spanned(name, "`repeats` defined twice"));
+                    }
+                }
+                AttrInput::Int(IntAttrInput {
+                    name,
+                    value: Int::Skip(attr_value),
+                    ..
+                }) => {
+                    if skip.is_none() {
+                        let _value: u32 = attr_value.base10_parse()?;
+                        skip = Some(attr_value);
+                    } else {
+                        return Err(Error::new_spanned(name, "`skip` defined twice"));
+                    }
+                }
+                AttrInput::Type(TypeAttrInput {
+                    name,
+                    value: attr_value,
+                    ..
+                }) => {
+                    if ty.is_none() {
+                        ty = Some(attr_value)
+                    } else {
+                        return Err(Error::new_spanned(name, "`type` defined twice"));
+                    }
+                }
+            };
         }
         if let Some(frequency) = frequency {
             if rate.is_none() {
                 let value: u32 = frequency.base10_parse().unwrap();
-                let rate: u32 = DEFAULT_RATE;
-                if rate < value {
+                if DEFAULT_RATE < value {
                     return Err(Error::new_spanned(
                         frequency,
                         "`frequency` should be less than `rate`, which is 44100 Hz",
@@ -205,6 +208,7 @@ impl Parse for SineWaveAttrs {
                 len,
                 repeats,
                 skip,
+                ty,
             })
         } else {
             Err(Error::new(input.span(), "`frequency` must be defined"))
@@ -319,7 +323,7 @@ impl SineWaveInput {
     }
 }
 
-/// Generates an array of [`i16`] for a sine wave.
+/// Generates an array of signed integers for a sine wave.
 ///
 /// Sample rate and frequency of the wave can be controlled with `rate` and `frequency`
 /// respectively. Rounding may apply which can affect the frequency of the final wave slightly.
@@ -332,13 +336,15 @@ impl SineWaveInput {
 ///
 /// If `rate` is not selected, it defaults to 44,100 Hz. `frequency` must be defined always.
 ///
+/// Type can be chosen with `type`. It can be any of [`i8`], [`i16`] and [`i32`]. Defaults to [`i16`].
+///
 /// # Examples
-/// This defines custom sine wave with sampling rate of 48,000 Hz at frequency of 1000 Hz with only
-/// one repeat (the default).
+/// This defines custom sine wave with sampling rate of 48,000 Hz at frequency of 1000 Hz with i32
+/// type.
 ///
 /// ```rust
 /// # use sine_macro::sine_wave;
-/// let wave = sine_wave!(rate: 48_000, frequency: 1000, repeats: 1);
+/// let wave = sine_wave!(rate: 48_000, frequency: 1_000, type: i32);
 /// ```
 ///
 /// You can also use this to define `static` or `const` variables. This defines one second long
@@ -354,6 +360,7 @@ impl SineWaveInput {
 pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(tokens as SineWaveInput);
     let attrs = input.get_attrs();
+    let ty = attrs.ty.clone();
     let frequency: u32 = attrs.frequency.clone().base10_parse().unwrap();
     let rate: u32 = attrs
         .rate
@@ -367,9 +374,10 @@ pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
         let samples: Vec<_> = (0..values)
             .map(|i| (i as f64 * multiplier))
             .map(f64::sin)
-            .map(|value| value * i16::MAX as f64)
-            .map(|value| value as i16)
+            .map(|value| value * ty.max() as f64)
+            .map(|value| value as i32)
             .collect();
+        // Just a little sanity check
         if !samples.iter().any(|x| *x != 0) {
             return {
                 Error::new_spanned(
@@ -406,7 +414,7 @@ pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 .cycle()
                 .skip(skip)
                 .take(count)
-                .map(|value| TokenTree::Literal(Literal::i16_suffixed(*value)))
+                .map(|value| TokenTree::Literal(ty.literal(*value)))
                 .interleave(repeat_n(
                     TokenTree::from(Punct::new(',', Spacing::Alone)),
                     count - 1,
@@ -421,8 +429,9 @@ pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
             let vis = item.vis;
             let mutability = item.mutability;
             let ident = item.ident;
+            let ty = ty.ident();
             quote! {
-                #vis static #mutability #ident: [i16; #count] = #sine_wave_tokens;
+                #vis static #mutability #ident: [#ty; #count] = #sine_wave_tokens;
             }
             .into()
         }
@@ -430,8 +439,9 @@ pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
             assert_eq!(item.name, "sine_wave");
             let vis = item.vis;
             let ident = item.ident;
+            let ty = ty.ident();
             quote! {
-                #vis const #ident: [i16; #count] = #sine_wave_tokens;
+                #vis const #ident: [#ty; #count] = #sine_wave_tokens;
             }
             .into()
         }

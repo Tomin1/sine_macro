@@ -1,0 +1,5 @@
+error: invalid value for `type`, must be one of `i8`, `i16` and `i32`
+ --> tests/fail/invalid_type.rs:9:34
+  |
+9 |     let _wave = sine_wave!(type: u16);
+  |                                  ^^^

@@ -87,3 +87,43 @@ fn test_100_10_shifted() {
     let wave = sine_wave!(frequency: 10, rate: 100, skip: 15);
     assert_eq!(wave, WAVE_100_10);
 }
+
+#[test]
+fn test_100_10_i8() {
+    const WAVE_100_10: [i8; 10] = [0, 74, 120, 120, 74, 0, -74, -120, -120, -74];
+    sine_wave! {
+        const WAVE = sine_wave(frequency: 10, rate: 100, type: i8);
+    }
+    assert_eq!(WAVE, WAVE_100_10);
+}
+
+#[test]
+fn test_100_10_i16() {
+    const WAVE_100_10: [i16; 10] = [
+        0, 19259, 31163, 31163, 19259, 0, -19259, -31163, -31163, -19259,
+    ];
+    sine_wave! {
+        const WAVE = sine_wave(frequency: 10, rate: 100, type: i16);
+    }
+    assert_eq!(WAVE, WAVE_100_10);
+}
+
+#[test]
+fn test_100_10_i32() {
+    const WAVE_100_10: [i32; 10] = [
+        0,
+        1262259217,
+        2042378316,
+        2042378316,
+        1262259217,
+        0,
+        -1262259217,
+        -2042378316,
+        -2042378316,
+        -1262259217,
+    ];
+    sine_wave! {
+        const WAVE = sine_wave(frequency: 10, rate: 100, type: i32);
+    }
+    assert_eq!(WAVE, WAVE_100_10);
+}
