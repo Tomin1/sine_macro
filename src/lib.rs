@@ -314,19 +314,20 @@ impl SineWaveInput {
 /// Sample rate and frequency of the wave can be controlled with `rate` and `frequency`
 /// respectively. Rounding may apply which can affect the frequency of the final wave slightly.
 ///
-/// The array is by default one period long so it can be repeated as many times as needed.
-/// If a specific number of samples or number of repeated periods are required use `len` and
-/// `repeats` respectively. Both cannot be used simultaneously. It is also possible to start the
-/// array on a later point with `skip`. That effectively introduces a phase shift and defaults to
-/// zero skipped samples.
+/// The array is by default one period long so it can be repeated as many times as needed. If a
+/// specific number of samples or number of repeated periods are required use `len` and `repeats`
+/// respectively. Both cannot be used simultaneously. It is also possible to start the array on a
+/// later point with `skip`. That effectively introduces a phase shift and defaults to zero skipped
+/// samples.
 ///
-/// If `rate` is not selected, it defaults to 44,100 Hz. `frequency` must be defined always.
+/// If `rate` is not selected, it defaults to 44,100 Hz. `frequency` must be always defined.
 ///
-/// Type can be chosen with `type`. It can be any of [`i8`], [`i16`] and [`i32`]. Defaults to [`i16`].
+/// Type can be chosen with `type`. It can be any of [`i8`], [`i16`] and [`i32`]. Defaults to
+/// [`i16`].
 ///
 /// # Examples
-/// This defines custom sine wave with sampling rate of 48,000 Hz at frequency of 1000 Hz with i32
-/// type.
+/// This defines custom sine wave with sampling rate of 48,000 Hz at frequency of 1000 Hz with
+/// [`i32`] type.
 ///
 /// ```rust
 /// # use sine_macro::sine_wave;
