@@ -35,6 +35,7 @@ use syn::punctuated::Punctuated;
 use syn::token::Paren;
 use syn::{Ident, LitInt, Result, StaticMutability, Visibility, parse_macro_input};
 use syn::{Token, parenthesized};
+use std::num::{NonZero, NonZeroU32, NonZeroUsize};
 
 mod types;
 use crate::types::helpers::{Ident as GetIdent, Literal as GetLiteral, Max as GetMax};
@@ -69,27 +70,20 @@ impl Parse for SineWaveAttrs {
                     ..
                 }) => {
                     if frequency.is_none() {
-                        let value: u32 = attr_value.base10_parse()?;
-                        if value > 0 {
-                            if let Some(rate) = &rate {
-                                let rate: u32 = rate.base10_parse().unwrap();
-                                if rate < value {
-                                    return Err(Error::new_spanned(
-                                        attr_value,
-                                        format_args!(
-                                            "`frequency` should be less than `rate`, which is {} Hz",
-                                            rate
-                                        ),
-                                    ));
-                                }
+                        let value: NonZeroU32 = attr_value.base10_parse()?;
+                        if let Some(rate) = &rate {
+                            let rate: NonZeroU32 = rate.base10_parse().unwrap();
+                            if rate < value {
+                                return Err(Error::new_spanned(
+                                    attr_value,
+                                    format_args!(
+                                        "`frequency` should be less than `rate`, which is {} Hz",
+                                        rate
+                                    ),
+                                ));
                             }
-                            frequency = Some(attr_value)
-                        } else {
-                            return Err(Error::new_spanned(
-                                attr_value,
-                                "`frequency` must be positive",
-                            ));
                         }
+                        frequency = Some(attr_value)
                     } else {
                         return Err(Error::new_spanned(name, "`frequency` defined twice"));
                     }
@@ -100,24 +94,20 @@ impl Parse for SineWaveAttrs {
                     ..
                 }) => {
                     if rate.is_none() {
-                        let value: u32 = attr_value.base10_parse()?;
-                        if value > 0 {
-                            if let Some(frequency) = &frequency {
-                                let frequency: u32 = frequency.base10_parse().unwrap();
-                                if frequency > value {
-                                    return Err(Error::new_spanned(
-                                        attr_value,
-                                        format_args!(
-                                            "`rate` should be more than `frequency`, which is {} Hz",
-                                            frequency
-                                        ),
-                                    ));
-                                }
+                        let value: NonZeroU32 = attr_value.base10_parse()?;
+                        if let Some(frequency) = &frequency {
+                            let frequency: NonZeroU32 = frequency.base10_parse().unwrap();
+                            if frequency > value {
+                                return Err(Error::new_spanned(
+                                    attr_value,
+                                    format_args!(
+                                        "`rate` should be more than `frequency`, which is {} Hz",
+                                        frequency
+                                    ),
+                                ));
                             }
-                            rate = Some(attr_value)
-                        } else {
-                            return Err(Error::new_spanned(attr_value, "`rate` must be positive"));
                         }
+                        rate = Some(attr_value)
                     } else {
                         return Err(Error::new_spanned(name, "`rate` defined twice"));
                     }
@@ -133,12 +123,8 @@ impl Parse for SineWaveAttrs {
                             "cannot define both `len` and `repeats`",
                         ));
                     } else if len.is_none() {
-                        let value: usize = attr_value.base10_parse()?;
-                        if value > 0 {
-                            len = Some(attr_value)
-                        } else {
-                            return Err(Error::new_spanned(attr_value, "`len` must be positive"));
-                        }
+                        let _value: NonZeroUsize = attr_value.base10_parse()?;
+                        len = Some(attr_value)
                     } else {
                         return Err(Error::new_spanned(name, "`len` defined twice"));
                     }
@@ -194,8 +180,8 @@ impl Parse for SineWaveAttrs {
         }
         if let Some(frequency) = frequency {
             if rate.is_none() {
-                let value: u32 = frequency.base10_parse().unwrap();
-                if DEFAULT_RATE < value {
+                let value: NonZeroU32 = frequency.base10_parse().unwrap();
+                if DEFAULT_RATE < value.get() {
                     return Err(Error::new_spanned(
                         frequency,
                         "`frequency` should be less than `rate`, which is 44100 Hz",
@@ -361,13 +347,13 @@ pub fn sine_wave(tokens: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(tokens as SineWaveInput);
     let attrs = input.get_attrs();
     let ty = attrs.ty.clone();
-    let frequency: u32 = attrs.frequency.clone().base10_parse().unwrap();
-    let rate: u32 = attrs
+    let frequency: NonZeroU32 = attrs.frequency.clone().base10_parse().unwrap();
+    let rate: NonZeroU32 = attrs
         .rate
         .clone()
         .map(|input| input.base10_parse().unwrap())
-        .unwrap_or(DEFAULT_RATE);
-    let values = get_number_of_samples(frequency as f64, rate as f64);
+        .unwrap_or_else(|| NonZero::new(DEFAULT_RATE).unwrap());
+    let values = get_number_of_samples(frequency.get() as f64, rate.get() as f64);
     let count;
     let sine_wave_tokens = {
         let multiplier = PI * 2_f64 / values as f64;
