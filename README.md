@@ -21,6 +21,7 @@ Add as a dependency:
 cargo add sine_macro
 ```
 
+Amend your code:
 ```rust
 use sine_macro::sine_wave;
 
