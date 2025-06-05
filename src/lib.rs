@@ -313,7 +313,8 @@ impl SineWaveInput {
 /// Generates an array of signed integers for a sine wave.
 ///
 /// Sample rate and frequency of the wave can be controlled with `rate` and `frequency`
-/// respectively. Rounding may apply which can affect the frequency of the final wave slightly.
+/// respectively. Rounding may apply which can affect the frequency of the final wave slightly. The
+/// length of the array is calculated as `floor(rate / frequency)`.
 ///
 /// The array is by default one period long so it can be repeated as many times as needed. If a
 /// specific number of samples or number of repeated periods are required use `len` and `repeats`
