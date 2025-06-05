@@ -24,6 +24,7 @@
 //! ```
 
 #![deny(missing_docs)]
+#![forbid(unsafe_code)]
 
 use itertools::Itertools;
 use proc_macro2::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
