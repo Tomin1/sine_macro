@@ -21,6 +21,18 @@ sine_wave! {
     const CONST_WAVE = sine_wave(frequency: 10, rate: 100);
 }
 
+sine_wave! {
+    pub const EXPORTED_WAVE = sine_wave(frequency: 100);
+}
+
+sine_wave! {
+    pub static EXPORTED_WAVE2 = sine_wave(frequency: 100);
+}
+
+sine_wave! {
+    pub static mut EXPORTED_WAVE3 = sine_wave(frequency: 100);
+}
+
 #[test]
 fn test_44100_441() {
     const WAVE_44100_441: [i16; 100] = [

@@ -31,12 +31,12 @@ use proc_macro2::{Delimiter, Group, Punct, Spacing, TokenStream, TokenTree};
 use quote::quote;
 use std::f64::consts::PI;
 use std::iter::repeat_n;
+use std::num::{NonZero, NonZeroU32, NonZeroUsize};
 use syn::parse::{Error, Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::token::Paren;
 use syn::{Ident, LitInt, Result, StaticMutability, Visibility, parse_macro_input};
 use syn::{Token, parenthesized};
-use std::num::{NonZero, NonZeroU32, NonZeroUsize};
 
 mod types;
 use crate::types::helpers::{Ident as GetIdent, Literal as GetLiteral, Max as GetMax};
@@ -285,10 +285,15 @@ enum SineWaveInput {
 
 impl Parse for SineWaveInput {
     fn parse(input: ParseStream) -> Result<Self> {
-        let lookahead = input.lookahead1();
-        if lookahead.peek(Token![static]) {
+        if input.peek(Token![pub]) && (input.peek2(Token![static]) || input.peek2(Token![const])) {
+            if input.peek2(Token![static]) {
+                input.parse().map(SineWaveInput::Static)
+            } else {
+                input.parse().map(SineWaveInput::Const)
+            }
+        } else if input.peek(Token![static]) {
             input.parse().map(SineWaveInput::Static)
-        } else if lookahead.peek(Token![const]) {
+        } else if input.peek(Token![const]) {
             input.parse().map(SineWaveInput::Const)
         } else {
             input.parse().map(SineWaveInput::Local)
